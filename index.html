@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>Voice Registration System</title>
+  <!-- SheetJS for real .xlsx export (gracefully falls back if offline) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js" defer></script>
+  <style>
+    :root {
+      --bg-grad: linear-gradient(135deg, #0f172a 0%, #1e1b4b 45%, #311042 100%);
+      --header-grad: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+      --card-bg: #ffffff;
+      --surface: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --secondary: #0ea5e9;
+      --secondary-dark: #0369a1;
+      --success: #10b981;
+      --success-dark: #047857;
+      --warning: #f59e0b;
+      --warning-dark: #b45309;
+      --danger: #ef4444;
+      --danger-dark: #b91c1c;
+      --mic-idle: linear-gradient(145deg, #f97316, #ea580c);
+      --mic-idle-shadow: #9a3412;
+      --mic-active: linear-gradient(145deg, #ef4444, #dc2626);
+      --mic-active-shadow: #7f1d1d;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Noto Sans Gujarati', system-ui, -apple-system, sans-serif;
+      background: var(--bg-grad);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 12px 12px 48px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* 3D Dashboard Header */
+    .hero-header {
+      background: var(--header-grad);
+      color: #ffffff;
+      padding: 20px 18px;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 10px 0 #2e1065, 0 18px 30px rgba(0, 0, 0, 0.45);
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hero-title h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    .hero-title p {
+      font-size: 0.9rem;
+      opacity: 0.92;
+      margin-top: 2px;
+    }
+
+    .stats-pill {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.25);
+    }
+
+    /* Security / Environment Banner */
+    .env-banner {
+      display: none;
+      background: #fef2f2;
+      border: 2px solid #ef4444;
+      border-bottom-width: 5px;
+      color: #7f1d1d;
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+    }
+    .env-banner.visible {
+      display: block;
+    }
+    .env-banner strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    /* 3D Cards */
+    .card-3d {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 8px 0 #cbd5e1, 0 16px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f1f5f9;
+    }
+
+    .card-header h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #1e1b4b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Voice Control Console */
+    .voice-console {
+      background: linear-gradient(145deg, #eef2ff, #f5f3ff);
+      border: 2px solid #c7d2fe;
+      border-bottom-width: 5px;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+
+    .voice-controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .lang-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 200px;
+    }
+
+    .lang-group label {
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: #312e81;
+      white-space: nowrap;
+    }
+
+    select, input[type="text"], input[type="tel"], input[type="date"] {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 1rem;
+      font-family: inherit;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      box-shadow: inset 0 3px 6px rgba(15, 23, 42, 0.08);
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: var(--primary);
+      box-shadow: inset 0 2px 4px rgba(79, 70, 229, 0.1), 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+
+    .voice-action-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* 3D Buttons */
+    .btn-3d {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      font-family: inherit;
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s;
+    }
+
+    .btn-3d:active:not(:disabled) {
+      transform: translateY(3px);
+    }
+
+    .btn-3d:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(145deg, #6366f1, #4f46e5);
+      box-shadow: 0 4px 0 var(--primary-dark);
+    }
+    .btn-primary:active:not(:disabled) { box-shadow: 0 1px 0 var(--primary-dark); }
+
+    .btn-success {
+      background: linear-gradient(145deg, #10b981, #059669);
+      box-shadow: 0 4px 0 var(--success-dark);
+    }
+    .btn-success:active:not(:disabled) { box-shadow: 0 1px 0 var(--success-dark); }
+
+    .btn-secondary {
+      background: linear-gradient(145deg, #0ea5e9, #0284c7);
+      box-shadow: 0 4px 0 var(--secondary-dark);
+    }
+    .btn-secondary:active:not(:disabled) { box-shadow: 0 1px 0 var(--secondary-dark); }
+
+    .btn-warning {
+      background: linear-gradient(145deg, #f59e0b, #d97706);
+      box-shadow: 0 4px 0 var(--warning-dark);
+    }
+    .btn-warning:active:not(:disabled) { box-shadow: 0 1px 0 var(--warning-dark); }
+
+    .btn-danger {
+      background: linear-gradient(145deg, #ef4444, #dc2626);
+      box-shadow: 0 4px 0 var(--danger-dark);
+    }
+    .btn-danger:active:not(:disabled) { box-shadow: 0 1px 0 var(--danger-dark); }
+
+    .btn-neutral {
+      background: linear-gradient(145deg, #64748b, #475569);
+      box-shadow: 0 4px 0 #1e293b;
+    }
+    .btn-neutral:active:not(:disabled) { box-shadow: 0 1px 0 #1e293b; }
+
+    .btn-sm {
+      padding: 7px 11px;
+      font-size: 0.82rem;
+      border-radius: 8px;
+    }
+
+    /* Status & Listening Banner */
+    .status-bar {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-ready { background: #e2e8f0; color: #334155; }
+    .badge-listening { background: #fee2e2; color: #b91c1c; }
+    .badge-processing { background: #fef3c7; color: #b45309; }
+    .badge-saved { background: #d1fae5; color: #047857; }
+    .badge-error { background: #fecaca; color: #991b1b; }
+
+    /* Soundwave Animation (Only visible when recognition actually starts) */
+    .wave-indicator {
+      display: none;
+      align-items: center;
+      gap: 3px;
+      height: 18px;
+    }
+    .wave-indicator.active {
+      display: inline-flex;
+    }
+    .wave-indicator span {
+      display: block;
+      width: 4px;
+      height: 6px;
+      background: #ef4444;
+      border-radius: 4px;
+      animation: soundWave 0.75s infinite ease-in-out;
+    }
+    .wave-indicator span:nth-child(2) { animation-delay: 0.15s; }
+    .wave-indicator span:nth-child(3) { animation-delay: 0.3s; }
+    .wave-indicator span:nth-child(4) { animation-delay: 0.45s; }
+
+    @keyframes soundWave {
+      0%, 100% { height: 5px; }
+      50% { height: 18px; }
+    }
+
+    /* Form Fields with Mic Buttons */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 680px) {
+      .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .field-box {
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid #e2e8f0;
+    }
+
+    .field-box.active-field {
+      border-color: #ef4444;
+      background: #fff5f5;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+
+    .field-box label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+
+    .field-hint {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+
+    .input-with-mic {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .input-with-mic input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mic-btn {
+      flex: 0 0 48px;
+      height: 48px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--mic-idle);
+      box-shadow: 0 4px 0 var(--mic-idle-shadow);
+      color: #ffffff;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+
+    .mic-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 var(--mic-idle-shadow);
+    }
+
+    .mic-btn.listening {
+      background: var(--mic-active);
+      box-shadow: 0 4px 0 var(--mic-active-shadow);
+      animation: micPulse 1.1s infinite;
+    }
+
+    @keyframes micPulse {
+      0% { box-shadow: 0 4px 0 var(--mic-active-shadow), 0 0 0 0 rgba(239, 68, 68, 0.65); }
+      70% { box-shadow: 0 4px 0 var(--mic-active-shadow), 0 0 0 12px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 4px 0 var(--mic-active-shadow), 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .form-submit-row {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .form-submit-row .btn-3d {
+      flex: 1 1 160px;
+      padding: 13px 18px;
+      font-size: 1rem;
+    }
+
+    /* Custom Columns Section */
+    .custom-col-creator {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .custom-col-creator .input-with-mic {
+      flex: 1 1 240px;
+    }
+
+    .custom-col-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .col-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #eef2ff;
+      border: 1.5px solid #c7d2fe;
+      border-bottom-width: 3px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #312e81;
+    }
+
+    .chip-actions button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .chip-actions button:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    /* Table Toolbar & Search */
+    .table-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1 1 230px;
+    }
+
+    .export-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Responsive Table */
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 2px solid #e2e8f0;
+      background: #ffffff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    thead {
+      background: linear-gradient(135deg, #312e81, #4f46e5);
+      color: #ffffff;
+    }
+
+    th, td {
+      padding: 12px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    th {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    tbody tr:hover {
+      background: #eef2ff;
+    }
+
+    .mono-phone {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: 0.03em;
+    }
+
+    .action-cell {
+      white-space: nowrap;
+      display: flex;
+      gap: 6px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+      z-index: 9999;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      max-width: 92vw;
+      text-align: center;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header class="hero-header">
+    <div class="hero-top">
+      <div class="hero-title">
+        <h1>🎙️ Voice Registration System</h1>
+        <p>ગુજરાતી &amp; English Smart Voice Data Entry</p>
+      </div>
+      <div class="stats-pill" id="totalCountBadge">કુલ નોંધણી (Total): 0</div>
+    </div>
+  </header>
+
+  <!-- Security / Browser Environment Warning -->
+  <div id="envBanner" class="env-banner" role="alert">
+    <strong id="envBannerTitle">⚠️ Voice Recognition Environment Alert</strong>
+    <span id="envBannerMsg"></span>
+  </div>
+
+  <!-- Main Registration Form Card -->
+  <section class="card-3d" aria-labelledby="formHeading">
+    <div class="card-header">
+      <h2 id="formHeading">📝 નવી નોંધણી (New Registration)</h2>
+      <span id="editModeBadge" style="display:none; background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:999px; font-size:0.8rem; font-weight:800;">
+        ✏️ Editing Record
+      </span>
+    </div>
+
+    <!-- Voice Control Bar -->
+    <div class="voice-console">
+      <div class="voice-controls-row">
+        <div class="lang-group">
+          <label for="voiceLang">🌐 Voice Language:</label>
+          <select id="voiceLang">
+            <option value="gu-IN" selected>ગુજરાતી (Gujarati - gu-IN)</option>
+            <option value="en-IN">English (India - en-IN)</option>
+          </select>
+        </div>
+
+        <div class="voice-action-btns">
+          <button type="button" id="btnStartVoice" class="btn-3d btn-primary btn-sm">▶ Start</button>
+          <button type="button" id="btnStopVoice" class="btn-3d btn-danger btn-sm" disabled>⏹ Stop</button>
+          <button type="button" id="btnRetryVoice" class="btn-3d btn-warning btn-sm" disabled>🔄 Retry</button>
+        </div>
+      </div>
+
+      <div class="status-bar" aria-live="polite">
+        <div class="status-left">
+          <span id="statusBadge" class="status-badge badge-ready">Ready</span>
+          <span id="statusMessage">Tap any 🎤 button beside a field and speak.</span>
+        </div>
+        <div id="waveIndicator" class="wave-indicator" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Form -->
+    <form id="registrationForm" autocomplete="off">
+      <input type="hidden" id="editingRecordId" value="" />
+
+      <div class="form-grid" id="dynamicFormGrid">
+        <!-- Name Field -->
+        <div class="field-box" id="box-fieldName">
+          <label for="fieldName">નામ (Name) *</label>
+          <div class="input-with-mic">
+            <input type="text" id="fieldName" placeholder="દા.ત. રમેશભાઈ પટેલ / Ramesh Patel" required />
+            <button type="button" class="mic-btn" data-target="fieldName" title="Speak Name" aria-label="Voice input for Name">🎤</button>
+          </div>
+          <span class="field-hint">Speak full name in Gujarati or English</span>
+        </div>
+
+        <!-- Mobile Number Field -->
+        <div class="field-box" id="box-fieldMobile">
+          <label for="fieldMobile">મોબાઈલ નંબર (Mobile Number) *</label>
+          <div class="input-with-mic">
+            <input type="tel" id="fieldMobile" inputmode="numeric" maxlength="20" placeholder="દા.ત. 09566889076" required />
+            <button type="button" class="mic-btn" data-target="fieldMobile" title="Speak Mobile Number" aria-label="Voice input for Mobile Number">🎤</button>
+          </div>
+          <span class="field-hint">Speak digits: "નવ પાંચ છ..." or "Nine Five Six..." (1-20 digits)</span>
+        </div>
+
+        <!-- Date Field -->
+        <div class="field-box" id="box-fieldDate">
+          <label for="fieldDate">તારીખ (Date) *</label>
+          <div class="input-with-mic">
+            <input type="date" id="fieldDate" required />
+            <button type="button" class="mic-btn" data-target="fieldDate" title="Speak Date" aria-label="Voice input for Date">🎤</button>
+          </div>
+          <span class="field-hint">Say "આજે" / "Today" or "24 November 2026"</span>
+        </div>
+
+        <!-- Custom columns render dynamically inside #dynamicFormGrid -->
+      </div>
+
+      <div class="form-submit-row">
+        <button type="submit" id="btnSaveRecord" class="btn-3d btn-success">💾 Save Registration</button>
+        <button type="button" id="btnCancelEdit" class="btn-3d btn-neutral" style="display:none;">✖ Cancel Edit</button>
+        <button type="button" id="btnResetForm" class="btn-3d btn-secondary">🧹 Clear Form</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Custom Columns Manager Card -->
+  <section class="card-3d" aria-labelledby="customColHeading">
+    <div class="card-header">
+      <h2 id="customColHeading">➕ કસ્ટમ કોલમ (Custom Columns)</h2>
+    </div>
+
+    <div class="custom-col-creator">
+      <div class="input-with-mic">
+        <input type="text" id="newCustomColInput" placeholder="નવું કોલમ નામ (દા.ત. ગામ / City / Aadhar)" />
+        <button type="button" class="mic-btn" data-target="newCustomColInput" title="Speak Column Name" aria-label="Voice input for Custom Column Name">🎤</button>
+      </div>
+      <button type="button" id="btnAddCustomCol" class="btn-3d btn-primary">➕ Add Column</button>
+    </div>
+
+    <div id="customColChips" class="custom-col-chips"></div>
+  </section>
+
+  <!-- Registered Records Table Card -->
+  <section class="card-3d" aria-labelledby="tableHeading">
+    <div class="card-header">
+      <h2 id="tableHeading">📋 નોંધણી યાદી (Registration Records)</h2>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="search-box input-with-mic">
+        <input type="text" id="searchInput" placeholder="🔍 શોધો (Search Name, Mobile, Date...)" />
+        <button type="button" class="mic-btn" data-target="searchInput" title="Search by Voice" aria-label="Voice input for Search">🎤</button>
+      </div>
+
+      <div class="export-group">
+        <button type="button" id="btnExportExcel" class="btn-3d btn-success btn-sm">📊 Excel (.xlsx)</button>
+        <button type="button" id="btnExportCsv" class="btn-3d btn-secondary btn-sm">📄 CSV (Offline)</button>
+        <button type="button" id="btnClearAll" class="btn-3d btn-danger btn-sm">🗑️ Clear All</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="recordsTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div id="toast" class="toast" role="status"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     1. STORAGE KEYS & APPLICATION STATE
+  ========================================================= */
+  const STORAGE_KEYS = {
+    RECORDS: 'vrs_records_v1',
+    CUSTOM_COLS: 'vrs_custom_cols_v1',
+    LANG: 'vrs_lang_v1'
+  };
+
+  let records = [];
+  let customColumns = []; // Array of { id: string, title: string }
+
+  // Voice Recognition State
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  let recognition = null;
+  let isRecognizing = false;
+  let activeTargetInputId = 'fieldName';
+  let lastUsedTargetInputId = 'fieldName';
+  let manualStopRequested = false;
+
+  /* =========================================================
+     2. DOM REFERENCES
+  ========================================================= */
+  const envBanner = document.getElementById('envBanner');
+  const envBannerTitle = document.getElementById('envBannerTitle');
+  const envBannerMsg = document.getElementById('envBannerMsg');
+
+  const voiceLangSelect = document.getElementById('voiceLang');
+  const btnStartVoice = document.getElementById('btnStartVoice');
+  const btnStopVoice = document.getElementById('btnStopVoice');
+  const btnRetryVoice = document.getElementById('btnRetryVoice');
+  const statusBadge = document.getElementById('statusBadge');
+  const statusMessage = document.getElementById('statusMessage');
+  const waveIndicator = document.getElementById('waveIndicator');
+
+  const registrationForm = document.getElementById('registrationForm');
+  const dynamicFormGrid = document.getElementById('dynamicFormGrid');
+  const editingRecordIdInput = document.getElementById('editingRecordId');
+  const editModeBadge = document.getElementById('editModeBadge');
+  const btnSaveRecord = document.getElementById('btnSaveRecord');
+  const btnCancelEdit = document.getElementById('btnCancelEdit');
+  const btnResetForm = document.getElementById('btnResetForm');
+
+  const fieldName = document.getElementById('fieldName');
+  const fieldMobile = document.getElementById('fieldMobile');
+  const fieldDate = document.getElementById('fieldDate');
+
+  const newCustomColInput = document.getElementById('newCustomColInput');
+  const btnAddCustomCol = document.getElementById('btnAddCustomCol');
+  const customColChips = document.getElementById('customColChips');
+
+  const searchInput = document.getElementById('searchInput');
+  const tableHead = document.getElementById('tableHead');
+  const tableBody = document.getElementById('tableBody');
+  const totalCountBadge = document.getElementById('totalCountBadge');
+
+  const btnExportExcel = document.getElementById('btnExportExcel');
+  const btnExportCsv = document.getElementById('btnExportCsv');
+  const btnClearAll = document.getElementById('btnClearAll');
+  const toastEl = document.getElementById('toast');
+
+  /* =========================================================
+     3. UTILITY FUNCTIONS
+  ========================================================= */
+  function getTodayISO() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 3000);
+  }
+
+  function setStatus(type, badgeText, msgText) {
+    statusBadge.className = 'status-badge';
+    if (type === 'listening') statusBadge.classList.add('badge-listening');
+    else if (type === 'processing') statusBadge.classList.add('badge-processing');
+    else if (type === 'saved') statusBadge.classList.add('badge-saved');
+    else if (type === 'error') statusBadge.classList.add('badge-error');
+    else statusBadge.classList.add('badge-ready');
+
+    statusBadge.textContent = badgeText;
+    statusMessage.textContent = msgText;
+
+    // Show soundwave ONLY when speech recognition actually fired onstart
+    if (type === 'listening' && isRecognizing) {
+      waveIndicator.classList.add('active');
+    } else {
+      waveIndicator.classList.remove('active');
+    }
+  }
+
+  /* =========================================================
+     4. MOBILE NUMBER VOICE PARSER (GUJARATI + ENGLISH)
+  ========================================================= */
+  const DIGIT_WORD_MAP = {
+    // Gujarati words & common speech recognition variants
+    'શૂન્ય': '0', 'શુન્ય': '0', 'ઝીરો': '0', 'જીરો': '0', '૦': '0', '0': '0',
+    'એક': '1', '૧': '1', '1': '1',
+    'બે': '2', '૨': '2', '2': '2',
+    'ત્રણ': '3', 'તણ': '3', '૩': '3', '3': '3',
+    'ચાર': '4', '૪': '4', '4': '4',
+    'પાંચ': '5', 'પાંછ': '5', '૫': '5', '5': '5',
+    'છ': '6', 'છહ': '6', '૬': '6', '6': '6',
+    'સાત': '7', '૭': '7', '7': '7',
+    'આઠ': '8', '૮': '8', '8': '8',
+    'નવ': '9', 'નઉ': '9', '૯': '9', '9': '9',
+
+    // English words & homophones
+    'zero': '0', 'oh': '0', 'o': '0',
+    'one': '1', 'won': '1',
+    'two': '2', 'to': '2', 'too': '2',
+    'three': '3', 'tree': '3',
+    'four': '4', 'for': '4',
+    'five': '5',
+    'six': '6',
+    'seven': '7',
+    'eight': '8', 'ate': '8',
+    'nine': '9'
+  };
+
+  const GUJARATI_TO_ASCII_DIGITS = {
+    '૦': '0', '૧': '1', '૨': '2', '૩': '3', '૪': '4',
+    '૫': '5', '૬': '6', '૭': '7', '૮': '8', '૯': '9'
+  };
+
+  function parseSpokenMobileNumber(transcript) {
+    if (!transcript) return '';
+
+    // Normalize punctuation and lowercase
+    let cleaned = transcript
+      .toLowerCase()
+      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?।|'"+\[\]]/g, ' ')
+      .trim();
+
+    // Handle "double X" / "triple X" in English (e.g., "double eight" -> "88")
+    cleaned = cleaned.replace(/\bdouble\s+([a-z0-9\u0A80-\u0AFF]+)/g, '$1 $1');
+    cleaned = cleaned.replace(/\btriple\s+([a-z0-9\u0A80-\u0AFF]+)/g, '$1 $1 $1');
+
+    const tokens = cleaned.split(/\s+/);
+    let resultDigits = '';
+
+    for (const token of tokens) {
+      if (Object.prototype.hasOwnProperty.call(DIGIT_WORD_MAP, token)) {
+        resultDigits += DIGIT_WORD_MAP[token];
+      } else {
+        // Extract embedded ASCII or Gujarati numerals if recognizer output "9566" directly
+        for (const ch of token) {
+          if (ch >= '0' && ch <= '9') {
+            resultDigits += ch;
+          } else if (GUJARATI_TO_ASCII_DIGITS[ch]) {
+            resultDigits += GUJARATI_TO_ASCII_DIGITS[ch];
+          }
+        }
+      }
+    }
+
+    // Preserve leading zeros, enforce max 20 digits as string
+    return resultDigits.slice(0, 20);
+  }
+
+  /* =========================================================
+     5. SPOKEN DATE HELPER
+  ========================================================= */
+  function parseSpokenDate(transcript) {
+    const raw = transcript.trim().toLowerCase();
+    const now = new Date();
+
+    if (raw.includes('today') || raw.includes('આજે') || raw.includes('આજ')) {
+      return getTodayISO();
+    }
+    if (raw.includes('yesterday') || raw.includes('ગઈકાલે') || raw.includes('કાલે')) {
+      const yest = new Date(now);
+      yest.setDate(now.getDate() - 1);
+      return yest.toISOString().slice(0, 10);
+    }
+
+    // Normalize Gujarati digits to ASCII
+    let normalized = raw.replace(/[૦-૯]/g, d => GUJARATI_TO_ASCII_DIGITS[d] || d);
+
+    // Match YYYY-MM-DD or DD/MM/YYYY or DD-MM-YYYY
+    const isoMatch = normalized.match(/(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+    }
+
+    const dmyMatch = normalized.match(/(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})/);
+    if (dmyMatch) {
+      return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+    }
+
+    // Fallback to native Date parser for English phrases like "24 November 2026"
+    const parsed = new Date(normalized);
+    if (!isNaN(parsed.getTime())) {
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth() + 1).padStart(2, '0');
+      const d = String(parsed.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    return null;
+  }
+
+  /* =========================================================
+     6. ENVIRONMENT & COMPATIBILITY CHECKS
+  ========================================================= */
+  function checkBrowserCompatibility() {
+    const issues = [];
+
+    if (window.location.protocol === 'file:') {
+      issues.push('You opened this file via local file:// protocol. Android Chrome blocks microphone & Web Speech API on file:// pages. Host it on HTTPS (e.g., GitHub Pages) for voice input to work.');
+    } else if (!window.isSecureContext) {
+      issues.push('Insecure context detected (HTTP). Microphone and Speech Recognition require HTTPS.');
+    }
+
+    if (!SpeechRecognitionAPI) {
+      issues.push('SpeechRecognition API is not supported in this browser. Please open this page in Google Chrome on Android or Desktop.');
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      issues.push('navigator.mediaDevices is unavailable in this browser context.');
+    }
+
+    if (issues.length > 0) {
+      envBannerTitle.textContent = '⚠️ Voice Recognition Compatibility Notice';
+      envBannerMsg.textContent = issues.join(' ');
+      envBanner.classList.add('visible');
+      setStatus('error', 'Unavailable', 'Voice recognition unavailable here. Manual typing & CSV/Excel still work.');
+      return false;
+    }
+
+    return true;
+  }
+
+  /* =========================================================
+     7. WEB SPEECH API ENGINE (SINGLE INSTANCE, SAFE LIFECYCLE)
+  ========================================================= */
+  function updateMicVisuals(activeId) {
+    document.querySelectorAll('.mic-btn').forEach(btn => {
+      const isMatch = activeId && btn.dataset.target === activeId;
+      btn.classList.toggle('listening', Boolean(isMatch));
+    });
+
+    document.querySelectorAll('.field-box').forEach(box => {
+      box.classList.remove('active-field');
+    });
+
+    if (activeId) {
+      const activeBox = document.getElementById(`box-${activeId}`);
+      if (activeBox) activeBox.classList.add('active-field');
+    }
+
+    btnStartVoice.disabled = isRecognizing;
+    btnStopVoice.disabled = !isRecognizing;
+    btnRetryVoice.disabled = isRecognizing || !lastUsedTargetInputId;
+  }
+
+  function initSpeechRecognition() {
+    if (!SpeechRecognitionAPI) return null;
+
+    const instance = new SpeechRecognitionAPI();
+    instance.continuous = false;
+    instance.interimResults = false;
+    instance.maxAlternatives = 1;
+
+    instance.onstart = function () {
+      isRecognizing = true;
+      updateMicVisuals(activeTargetInputId);
+      const langLabel = voiceLangSelect.value === 'gu-IN' ? 'ગુજરાતી' : 'English';
+      setStatus('listening', 'Listening...', `Speak now in ${langLabel}...`);
+    };
+
+    instance.onresult = function (event) {
+      setStatus('processing', 'Processing', 'Converting speech...');
+      const transcript = event.results[0][0].transcript || '';
+      applyTranscriptToTarget(activeTargetInputId, transcript);
+    };
+
+    instance.onerror = function (event) {
+      isRecognizing = false;
+      updateMicVisuals(null);
+
+      const errMap = {
+        'not-allowed': 'Microphone permission denied. Please allow microphone access in Chrome Site Settings.',
+        'service-not-allowed': 'Speech service blocked. Ensure HTTPS and Google app/speech services are enabled on Android.',
+        'no-speech': 'No speech detected. Tap Retry and speak clearly closer to the mic.',
+        'audio-capture': 'No microphone found or mic is in use by another app.',
+        'network': 'Network error. Web Speech API requires an active internet connection.',
+        'aborted': 'Voice input stopped.'
+      };
+
+      const friendlyMsg = errMap[event.error] || `Speech error (${event.error}). Try again or type manually.`;
+      setStatus('error', 'Error', friendlyMsg);
+      showToast('⚠️ ' + friendlyMsg);
+    };
+
+    instance.onend = function () {
+      const wasActive = isRecognizing;
+      isRecognizing = false;
+      updateMicVisuals(null);
+
+      // If ended naturally without result or error (and not manually stopped)
+      if (wasActive && !manualStopRequested && statusBadge.textContent === 'Listening...') {
+        setStatus('ready', 'Ready', 'Stopped listening. Tap 🎤 or Retry to speak again.');
+      }
+      manualStopRequested = false;
+    };
+
+    return instance;
+  }
+
+  function applyTranscriptToTarget(targetId, transcript) {
+    const targetInput = document.getElementById(targetId);
+    if (!targetInput) return;
+
+    if (targetId === 'fieldMobile') {
+      const digits = parseSpokenMobileNumber(transcript);
+      if (digits.length > 0) {
+        targetInput.value = digits;
+        setStatus('saved', 'Saved', `Mobile captured: ${digits} ("${transcript}")`);
+        showToast(`✅ Mobile: ${digits}`);
+      } else {
+        setStatus('error', 'Error', `Could not detect digits in "${transcript}". Speak digits 0-9.`);
+      }
+      return;
+    }
+
+    if (targetId === 'fieldDate') {
+      const isoDate = parseSpokenDate(transcript);
+      if (isoDate) {
+        targetInput.value = isoDate;
+        setStatus('saved', 'Saved', `Date set to ${isoDate}`);
+        showToast(`✅ Date: ${isoDate}`);
+      } else {
+        setStatus('error', 'Error', `Could not understand date "${transcript}". Say "Today" or "24 November 2026".`);
+      }
+      return;
+    }
+
+    // Standard text fields (Name, Search, Custom Column Title, Custom Column Values)
+    const cleanedText = transcript.trim();
+    targetInput.value = cleanedText;
+
+    if (targetId === 'searchInput') {
+      renderTable();
+    }
+
+    setStatus('saved', 'Saved', `Captured: "${cleanedText}"`);
+    showToast(`✅ Captured: ${cleanedText}`);
+  }
+
+  async function startVoiceForTarget(targetId) {
+    if (!SpeechRecognitionAPI) {
+      checkBrowserCompatibility();
+      showToast('❌ Speech Recognition not supported in this browser.');
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      checkBrowserCompatibility();
+      showToast('❌ HTTPS is required for microphone access.');
+      return;
+    }
+
+    // Stop any existing session cleanly before starting a new one
+    if (isRecognizing && recognition) {
+      manualStopRequested = true;
+      try { recognition.abort(); } catch (_) {}
+      isRecognizing = false;
+    }
+
+    activeTargetInputId = targetId || lastUsedTargetInputId || 'fieldName';
+    lastUsedTargetInputId = activeTargetInputId;
+
+    // Request microphone permission explicitly if navigator.mediaDevices is available
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately release raw stream tracks so Android Chrome SpeechRecognition can claim the mic
+        stream.getTracks().forEach(track => track.stop());
+      } catch (permErr) {
+        setStatus('error', 'Error', 'Microphone permission blocked. Allow mic access in Chrome settings.');
+        showToast('🚫 Microphone permission denied');
+        return;
+      }
+    }
+
+    if (!recognition) {
+      recognition = initSpeechRecognition();
+    }
+
+    recognition.lang = voiceLangSelect.value;
+    manualStopRequested = false;
+
+    try {
+      recognition.start();
+    } catch (startErr) {
+      isRecognizing = false;
+      updateMicVisuals(null);
+      setStatus('error', 'Error', 'Could not start microphone. Please wait a second and tap Retry.');
+    }
+  }
+
+  function stopVoiceRecognition() {
+    if (recognition && isRecognizing) {
+      manualStopRequested = true;
+      try {
+        recognition.stop();
+      } catch (_) {}
+      setStatus('ready', 'Stopped', 'Voice recognition stopped.');
+    }
+  }
+
+  /* =========================================================
+     8. DATA PERSISTENCE & SAMPLE DATA
+  ========================================================= */
+  function loadInitialData() {
+    const savedLang = localStorage.getItem(STORAGE_KEYS.LANG);
+    if (savedLang && (savedLang === 'gu-IN' || savedLang === 'en-IN')) {
+      voiceLangSelect.value = savedLang;
+    }
+
+    try {
+      const rawCols = localStorage.getItem(STORAGE_KEYS.CUSTOM_COLS);
+      customColumns = rawCols ? JSON.parse(rawCols) : null;
+    } catch (_) {
+      customColumns = null;
+    }
+
+    try {
+      const rawRecords = localStorage.getItem(STORAGE_KEYS.RECORDS);
+      records = rawRecords ? JSON.parse(rawRecords) : null;
+    } catch (_) {
+      records = null;
+    }
+
+    // Seed practical sample data on first visit
+    if (!Array.isArray(customColumns)) {
+      customColumns = [
+        { id: 'col_city', title: 'ગામ / શહેર (City)' }
+      ];
+      saveCustomColumns();
+    }
+
+    if (!Array.isArray(records)) {
+      records = [
+        {
+          id: 'rec_1',
+          name: 'રમેશભાઈ પટેલ (Ramesh Patel)',
+          mobile: '9566889076',
+          date: getTodayISO(),
+          custom: { col_city: 'સુરત (Surat)' }
+        },
+        {
+          id: 'rec_2',
+          name: 'મીનાબેન શાહ (Meena Shah)',
+          mobile: '09825012345',
+          date: getTodayISO(),
+          custom: { col_city: 'અમદાવાદ (Ahmedabad)' }
+        },
+        {
+          id: 'rec_3',
+          name: 'Kiran Desai',
+          mobile: '9876543210',
+          date: getTodayISO(),
+          custom: { col_city: 'વડોદરા (Vadodara)' }
+        }
+      ];
+      saveRecords();
+    }
+  }
+
+  function saveRecords() {
+    localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+    updateTotalCounter();
+  }
+
+  function saveCustomColumns() {
+    localStorage.setItem(STORAGE_KEYS.CUSTOM_COLS, JSON.stringify(customColumns));
+  }
+
+  function updateTotalCounter() {
+    totalCountBadge.textContent = `કુલ નોંધણી (Total): ${records.length}`;
+  }
+
+  /* =========================================================
+     9. DYNAMIC CUSTOM COLUMNS RENDERING & MANAGEMENT
+  ========================================================= */
+  function renderCustomColumnInputs(existingCustomValues = {}) {
+    // Remove old custom field boxes from form
+    dynamicFormGrid.querySelectorAll('.custom-field-box').forEach(el => el.remove());
+
+    customColumns.forEach(col => {
+      const inputId = `customInput_${col.id}`;
+      const box = document.createElement('div');
+      box.className = 'field-box custom-field-box';
+      box.id = `box-${inputId}`;
+
+      const label = document.createElement('label');
+      label.setAttribute('for', inputId);
+      label.textContent = col.title;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'input-with-mic';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = inputId;
+      input.dataset.colId = col.id;
+      input.placeholder = `${col.title} લખો અથવા બોલો...`;
+      input.value = existingCustomValues[col.id] || '';
+
+      const micBtn = document.createElement('button');
+      micBtn.type = 'button';
+      micBtn.className = 'mic-btn';
+      micBtn.dataset.target = inputId;
+      micBtn.title = `Speak ${col.title}`;
+      micBtn.setAttribute('aria-label', `Voice input for ${col.title}`);
+      micBtn.textContent = '🎤';
+
+      wrapper.appendChild(input);
+      wrapper.appendChild(micBtn);
+      box.appendChild(label);
+      box.appendChild(wrapper);
+
+      dynamicFormGrid.appendChild(box);
+    });
+  }
+
+  function renderCustomColumnChips() {
+    customColChips.innerHTML = '';
+
+    if (customColumns.length === 0) {
+      customColChips.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">કોઈ કસ્ટમ કોલમ ઉમેરેલ નથી (No custom columns added yet).</span>';
+      return;
+    }
+
+    customColumns.forEach(col => {
+      const chip = document.createElement('div');
+      chip.className = 'col-chip';
+
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = col.title;
+
+      const actions = document.createElement('span');
+      actions.className = 'chip-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.title = 'Edit Column Title';
+      editBtn.textContent = '✏️';
+      editBtn.addEventListener('click', () => editCustomColumn(col.id));
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.title = 'Delete Column';
+      delBtn.textContent = '❌';
+      delBtn.addEventListener('click', () => deleteCustomColumn(col.id));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
+      chip.appendChild(titleSpan);
+      chip.appendChild(actions);
+      customColChips.appendChild(chip);
+    });
+  }
+
+  function addCustomColumn() {
+    const title = newCustomColInput.value.trim();
+    if (!title) {
+      showToast('⚠️ કૃપા કરીને કોલમનું નામ લખો (Enter column title)');
+      newCustomColInput.focus();
+      return;
+    }
+
+    const currentValues = collectCustomFormValues();
+    const newCol = {
+      id: 'col_' + Date.now(),
+      title: title
+    };
+
+    customColumns.push(newCol);
+    saveCustomColumns();
+    newCustomColInput.value = '';
+
+    renderCustomColumnChips();
+    renderCustomColumnInputs(currentValues);
+    renderTable();
+    showToast(`✅ Column "${title}" added`);
+  }
+
+  function editCustomColumn(colId) {
+    const col = customColumns.find(c => c.id === colId);
+    if (!col) return;
+
+    const updatedTitle = prompt('કોલમનું નવું નામ લખો (Edit Column Title):', col.title);
+    if (updatedTitle === null) return;
+
+    const trimmed = updatedTitle.trim();
+    if (!trimmed) {
+      showToast('⚠️ Column title cannot be empty');
+      return;
+    }
+
+    const currentValues = collectCustomFormValues();
+    col.title = trimmed;
+    saveCustomColumns();
+
+    renderCustomColumnChips();
+    renderCustomColumnInputs(currentValues);
+    renderTable();
+    showToast('✅ Column updated');
+  }
+
+  function deleteCustomColumn(colId) {
+    const col = customColumns.find(c => c.id === colId);
+    if (!col) return;
+
+    if (!confirm(`શું તમે "${col.title}" કોલમ કાઢી નાખવા માંગો છો? (Delete this column and its data?)`)) {
+      return;
+    }
+
+    const currentValues = collectCustomFormValues();
+    delete currentValues[colId];
+
+    customColumns = customColumns.filter(c => c.id !== colId);
+    records.forEach(rec => {
+      if (rec.custom) delete rec.custom[colId];
+    });
+
+    saveCustomColumns();
+    saveRecords();
+
+    renderCustomColumnChips();
+    renderCustomColumnInputs(currentValues);
+    renderTable();
+    showToast('🗑️ Column deleted');
+  }
+
+  function collectCustomFormValues() {
+    const values = {};
+    customColumns.forEach(col => {
+      const inp = document.getElementById(`customInput_${col.id}`);
+      values[col.id] = inp ? inp.value.trim() : '';
+    });
+    return values;
+  }
+
+  /* =========================================================
+     10. REGISTRATION CRUD & TABLE RENDERING
+  ========================================================= */
+  function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const name = fieldName.value.trim();
+    // Sanitize mobile digits while preserving leading zeros (1 to 20 digits)
+    const rawMobile = fieldMobile.value.trim().replace(/[૦-૯]/g, d => GUJARATI_TO_ASCII_DIGITS[d] || d);
+    const mobile = rawMobile.replace(/\D/g, '').slice(0, 20);
+    const date = fieldDate.value;
+
+    if (!name) {
+      showToast('⚠️ કૃપા કરીને નામ લખો (Please enter Name)');
+      fieldName.focus();
+      return;
+    }
+
+    if (mobile.length < 1 || mobile.length > 20) {
+      showToast('⚠️ મોબાઈલ નંબર 1 થી 20 અંકનો હોવો જોઈએ (1-20 digits)');
+      fieldMobile.focus();
+      return;
+    }
+
+    if (!date) {
+      showToast('⚠️ કૃપા કરીને તારીખ પસંદ કરો (Please select Date)');
+      fieldDate.focus();
+      return;
+    }
+
+    const customValues = collectCustomFormValues();
+    const editingId = editingRecordIdInput.value;
+
+    if (editingId) {
+      const index = records.findIndex(r => r.id === editingId);
+      if (index !== -1) {
+        records[index] = {
+          ...records[index],
+          name,
+          mobile,
+          date,
+          custom: customValues
+        };
+      }
+      showToast('✅ રેકોર્ડ અપડેટ થઈ ગયો (Record Updated)');
+    } else {
+      records.push({
+        id: 'rec_' + Date.now(),
+        name,
+        mobile,
+        date,
+        custom: customValues
+      });
+      showToast('✅ નોંધણી સેવ થઈ ગઈ (Registration Saved)');
+    }
+
+    saveRecords();
+    resetFormState();
+    renderTable();
+    setStatus('saved', 'Saved', 'Record saved to device storage.');
+  }
+
+  function startEditRecord(recordId) {
+    const rec = records.find(r => r.id === recordId);
+    if (!rec) return;
+
+    editingRecordIdInput.value = rec.id;
+    fieldName.value = rec.name;
+    fieldMobile.value = rec.mobile;
+    fieldDate.value = rec.date;
+
+    renderCustomColumnInputs(rec.custom || {});
+
+    editModeBadge.style.display = 'inline-block';
+    btnSaveRecord.textContent = '💾 Update Record';
+    btnCancelEdit.style.display = 'inline-flex';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('✏️ Editing record...');
+  }
+
+  function deleteRecord(recordId) {
+    const rec = records.find(r => r.id === recordId);
+    if (!rec) return;
+
+    if (!confirm(`શું તમે "${rec.name}" ની નોંધણી કાઢી નાખવા માંગો છો?\n(Are you sure you want to delete this record?)`)) {
+      return;
+    }
+
+    records = records.filter(r => r.id !== recordId);
+    saveRecords();
+
+    if (editingRecordIdInput.value === recordId) {
+      resetFormState();
+    }
+
+    renderTable();
+    showToast('🗑️ રેકોર્ડ કાઢી નાખ્યો (Record Deleted)');
+  }
+
+  function clearAllData() {
+    if (records.length === 0) {
+      showToast('ℹ️ No records to clear.');
+      return;
+    }
+
+    if (!confirm('⚠️ ચેતવણી: બધો જ ડેટા કાયમ માટે ભૂંસાઈ જશે!\nAre you sure you want to delete ALL registration records?')) {
+      return;
+    }
+
+    records = [];
+    saveRecords();
+    resetFormState();
+    renderTable();
+    showToast('🗑️ All records cleared');
+  }
+
+  function resetFormState() {
+    editingRecordIdInput.value = '';
+    fieldName.value = '';
+    fieldMobile.value = '';
+    fieldDate.value = getTodayISO();
+    renderCustomColumnInputs({});
+
+    editModeBadge.style.display = 'none';
+    btnSaveRecord.textContent = '💾 Save Registration';
+    btnCancelEdit.style.display = 'none';
+  }
+
+  function renderTable() {
+    // 1. Render Table Headers
+    tableHead.innerHTML = '';
+    const headRow = document.createElement('tr');
+
+    const baseHeaders = [
+      'ક્રમ (Sr.)',
+      'નામ (Name)',
+      'મોબાઈલ નંબર (Mobile)',
+      'તારીખ (Date)'
+    ];
+
+    baseHeaders.forEach(text => {
+      const th = document.createElement('th');
+      th.textContent = text;
+      headRow.appendChild(th);
+    });
+
+    customColumns.forEach(col => {
+      const th = document.createElement('th');
+      th.textContent = col.title;
+      headRow.appendChild(th);
+    });
+
+    const actionTh = document.createElement('th');
+    actionTh.textContent = 'ક્રિયા (Actions)';
+    headRow.appendChild(actionTh);
+    tableHead.appendChild(headRow);
+
+    // 2. Filter Records by Search Query
+    const query = searchInput.value.trim().toLowerCase();
+    const filtered = records.filter(rec => {
+      if (!query) return true;
+      const customText = customColumns
+        .map(c => (rec.custom && rec.custom[c.id]) || '')
+        .join(' ')
+        .toLowerCase();
+
+      return (
+        rec.name.toLowerCase().includes(query) ||
+        rec.mobile.toLowerCase().includes(query) ||
+        rec.date.toLowerCase().includes(query) ||
+        customText.includes(query)
+      );
+    });
+
+    // 3. Render Table Body
+    tableBody.innerHTML = '';
+    const totalColSpan = 5 + customColumns.length;
+
+    if (filtered.length === 0) {
+      const emptyRow = document.createElement('tr');
+      const emptyCell = document.createElement('td');
+      emptyCell.colSpan = totalColSpan;
+      emptyCell.className = 'empty-state';
+      emptyCell.textContent = records.length === 0
+        ? 'હજુ સુધી કોઈ નોંધણી નથી. ઉપરના ફોર્મમાંથી નવી નોંધણી ઉમેરો.'
+        : 'શોધ મુજબ કોઈ રેકોર્ડ મળ્યો નથી (No matching records found).';
+      emptyRow.appendChild(emptyCell);
+      tableBody.appendChild(emptyRow);
+      return;
+    }
+
+    filtered.forEach((rec, idx) => {
+      const tr = document.createElement('tr');
+
+      const tdSr = document.createElement('td');
+      tdSr.textContent = idx + 1;
+      tr.appendChild(tdSr);
+
+      const tdName = document.createElement('td');
+      tdName.style.fontWeight = '600';
+      tdName.textContent = rec.name;
+      tr.appendChild(tdName);
+
+      const tdMobile = document.createElement('td');
+      tdMobile.className = 'mono-phone';
+      tdMobile.textContent = rec.mobile;
+      tr.appendChild(tdMobile);
+
+      const tdDate = document.createElement('td');
+      tdDate.textContent = rec.date;
+      tr.appendChild(tdDate);
+
+      customColumns.forEach(col => {
+        const tdCustom = document.createElement('td');
+        tdCustom.textContent = (rec.custom && rec.custom[col.id]) ? rec.custom[col.id] : '-';
+        tr.appendChild(tdCustom);
+      });
+
+      const tdActions = document.createElement('td');
+      tdActions.className = 'action-cell';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn-3d btn-warning btn-sm';
+      editBtn.textContent = '✏️ Edit';
+      editBtn.addEventListener('click', () => startEditRecord(rec.id));
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn-3d btn-danger btn-sm';
+      delBtn.textContent = '🗑️';
+      delBtn.title = 'Delete Record';
+      delBtn.addEventListener('click', () => deleteRecord(rec.id));
+
+      tdActions.appendChild(editBtn);
+      tdActions.appendChild(delBtn);
+      tr.appendChild(tdActions);
+
+      tableBody.appendChild(tr);
+    });
+  }
+
+  /* =========================================================
+     11. EXCEL (.XLSX) & CSV EXPORT (PRESERVING LEADING ZEROS & GUJARATI)
+  ========================================================= */
+  function buildExportMatrix() {
+    const headers = [
+      'ક્રમ (Serial Number)',
+      'નામ (Name)',
+      'મોબાઈલ નંબર (Mobile Number)',
+      'તારીખ (Date)',
+      ...customColumns.map(c => c.title)
+    ];
+
+    const rows = records.map((rec, index) => [
+      index + 1,
+      rec.name,
+      String(rec.mobile), // Keep as string to preserve leading zeros
+      rec.date,
+      ...customColumns.map(c => (rec.custom && rec.custom[c.id]) || '')
+    ]);
+
+    return { headers, rows };
+  }
+
+  function exportToCSV() {
+    if (records.length === 0) {
+      showToast('⚠️ Export કરવા માટે કોઈ ડેટા નથી (No records to export)');
+      return;
+    }
+
+    const { headers, rows } = buildExportMatrix();
+
+    const escapeCsvCell = (val, isPhoneCol) => {
+      const str = String(val ?? '');
+      // Prefix tab or ="..." formula so Excel opens CSV without stripping leading zeros or scientific notation
+      if (isPhoneCol) {
+        return `"=""${str.replace(/"/g, '""')}"""`;
+      }
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const csvLines = [
+      headers.map(h => escapeCsvCell(h, false)).join(','),
+      ...rows.map(row =>
+        row.map((cell, colIdx) => escapeCsvCell(cell, colIdx === 2)).join(',')
+      )
+    ];
+
+    // UTF-8 BOM (\uFEFF) ensures Gujarati characters render cleanly in MS Excel & Google Sheets
+    const blob = new Blob(['\uFEFF' + csvLines.join('\r\n')], {
+      type: 'text/csv;charset=utf-8;'
+    });
+
+    triggerDownload(blob, `Voice_Registration_${getTodayISO()}.csv`);
+    showToast('✅ CSV file downloaded');
+  }
+
+  function exportToExcel() {
+    if (records.length === 0) {
+      showToast('⚠️ Export કરવા માટે કોઈ ડેટા નથી (No records to export)');
+      return;
+    }
+
+    // Fallback gracefully to CSV if offline or SheetJS CDN failed to load
+    if (typeof window.XLSX === 'undefined') {
+      showToast('ℹ️ Excel library offline — downloading CSV instead...');
+      exportToCSV();
+      return;
+    }
+
+    const { headers, rows } = buildExportMatrix();
+    const aoa = [headers, ...rows];
+
+    const ws = window.XLSX.utils.aoa_to_sheet(aoa);
+
+    // Force Mobile Number column (Column C, index 2) cells to explicit Text type ('s')
+    for (let r = 1; r <= rows.length; r++) {
+      const cellRef = window.XLSX.utils.encode_cell({ r, c: 2 });
+      if (ws[cellRef]) {
+        ws[cellRef].t = 's';
+        ws[cellRef].z = '@';
+        ws[cellRef].v = String(rows[r - 1][2]);
+      }
+    }
+
+    // Auto-size columns cleanly
+    ws['!cols'] = headers.map((h, i) => ({
+      wch: Math.max(h.length + 5, i === 1 ? 26 : 18)
+    }));
+
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
+    window.XLSX.writeFile(wb, `Voice_Registration_${getTodayISO()}.xlsx`);
+
+    showToast('✅ Excel (.xlsx) file downloaded');
+  }
+
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  /* =========================================================
+     12. EVENT DELEGATION & INITIALIZATION
+  ========================================================= */
+  // Single delegated click listener for all static & dynamic 🎤 buttons
+  document.addEventListener('click', function (e) {
+    const micBtn = e.target.closest('.mic-btn');
+    if (!micBtn) return;
+
+    const targetId = micBtn.dataset.target;
+    if (isRecognizing && activeTargetInputId === targetId) {
+      stopVoiceRecognition();
+    } else {
+      startVoiceForTarget(targetId);
+    }
+  });
+
+  btnStartVoice.addEventListener('click', () => startVoiceForTarget(lastUsedTargetInputId));
+  btnStopVoice.addEventListener('click', stopVoiceRecognition);
+  btnRetryVoice.addEventListener('click', () => startVoiceForTarget(lastUsedTargetInputId));
+
+  voiceLangSelect.addEventListener('change', () => {
+    localStorage.setItem(STORAGE_KEYS.LANG, voiceLangSelect.value);
+    showToast(`🌐 Voice Language: ${voiceLangSelect.options[voiceLangSelect.selectedIndex].text}`);
+  });
+
+  // Keep mobile input strictly numeric (1-20 digits) even when typed manually
+  fieldMobile.addEventListener('input', () => {
+    const converted = fieldMobile.value.replace(/[૦-૯]/g, d => GUJARATI_TO_ASCII_DIGITS[d] || d);
+    fieldMobile.value = converted.replace(/\D/g, '').slice(0, 20);
+  });
+
+  registrationForm.addEventListener('submit', handleFormSubmit);
+  btnCancelEdit.addEventListener('click', resetFormState);
+  btnResetForm.addEventListener('click', resetFormState);
+
+  btnAddCustomCol.addEventListener('click', addCustomColumn);
+  newCustomColInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCustomColumn();
+    }
+  });
+
+  searchInput.addEventListener('input', renderTable);
+  btnExportExcel.addEventListener('click', exportToExcel);
+  btnExportCsv.addEventListener('click', exportToCSV);
+  btnClearAll.addEventListener('click', clearAllData);
+
+  // Boot Application
+  loadInitialData();
+  fieldDate.value = getTodayISO();
+  renderCustomColumnChips();
+  renderCustomColumnInputs();
+  renderTable();
+  updateTotalCounter();
+  checkBrowserCompatibility();
+})();
+</script>
+</body>
+</html>
